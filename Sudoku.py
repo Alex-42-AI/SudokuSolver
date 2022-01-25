@@ -402,27 +402,24 @@ def solve():
                                         last_attempt[Row1][square1][row1][col1].remove(el), make_equal(last_attempt, sudoku)
                                 if not solved():
                                     raise ValueError
-a = input('Press enter to start...')
-while a == '':
-    for Row in range(3):
-        row, current = 0, None
-        while row < 3:
-            try:
-                current = list(map(int, input(f'{3 * Row + row + 1}: ').split(maxsplit=9)))
-            except TypeError:
+for Row in range(3):
+    row, current = 0, None
+    while row < 3:
+        try:
+            current = list(map(int, input(f'{3 * Row + row + 1}: ').split(maxsplit=9)))
+        except TypeError:
+            print('This isn\'t valid, enter line again!')
+            row -= 1
+        for square in range(3):
+            sudoku[Row][square][row] = current[3 * square: 3 * square + 3]
+        for n in current:
+            if n != n % 10:
                 print('This isn\'t valid, enter line again!')
                 row -= 1
-            for square in range(3):
-                sudoku[Row][square][row] = current[3 * square: 3 * square + 3]
-            for n in current:
-                if n != n % 10:
-                    print('This isn\'t valid, enter line again!')
-                    row -= 1
-            row += 1
-    t1 = time() * 1000
-    solve()
-    t2 = time() * 1000
-    if not solved():
-        raise ValueError('This sudoku is incorrect!')
-    print_sudoku(), print('Milliseconds:', t2 - t1)
-    a = input('Press enter to start a new puzzle...')
+        row += 1
+t1 = time() * 1000
+solve()
+t2 = time() * 1000
+if not solved():
+    raise ValueError('This sudoku is incorrect!')
+print_sudoku(), print('Milliseconds:', t2 - t1)
