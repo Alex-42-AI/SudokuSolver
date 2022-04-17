@@ -1,10 +1,17 @@
 from time import time
-sudoku = [[[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]]]
+
+sudoku = [[[[], [], []], [[], [], []], [[], [], []]], 
+          [[[], [], []], [[], [], []], [[], [], []]],
+          [[[], [], []], [[], [], []], [[], [], []]]]
+
+
 def print_sudoku():
     for Row1 in range(3):
         for row1 in range(3):
             print(' | '.join(['  '.join(str(i) for i in square1[row1]) for square1 in sudoku[Row1]]))
         print('--------|---------|--------' * (Row1 < 2))
+
+
 def error_in_lines():
     rows = []
     for Row1 in sudoku:
@@ -17,6 +24,8 @@ def error_in_lines():
             if i in so_far_unique:
                 raise ValueError
             so_far_unique.append(i)
+
+
 def solved():
     for Row1 in sudoku:
         for square1 in Row1:
@@ -25,6 +34,8 @@ def solved():
                     if isinstance(col1, list) or not col1:
                         return False
     return True
+
+
 def make_equal(original, copy):
     for Row1 in range(3):
         for square1 in range(3):
@@ -34,6 +45,8 @@ def make_equal(original, copy):
                         copy[Row1][square1][row1][col1] = original[Row1][square1][row1][col1]
                     elif isinstance(original[Row1][square1][row1][col1], list):
                         copy[Row1][square1][row1][col1] = original[Row1][square1][row1][col1].copy()
+
+
 def TransposeSudoku():
     for i in range(3):
         for j in range(i + 1, 3):
@@ -42,7 +55,10 @@ def TransposeSudoku():
         for square1 in range(3):
             for i in range(3):
                 for j in range(i + 1, 3):
-                    sudoku[Row1][square1][i][j], sudoku[Row1][square1][j][i] = sudoku[Row1][square1][j][i], sudoku[Row1][square1][i][j]
+                    sudoku[Row1][square1][i][j], sudoku[Row1][square1][j][i] = sudoku[Row1][square1][j][i], \
+                                                                               sudoku[Row1][square1][i][j]
+
+
 def filling_in_els_only_met_once_squares():
     for Row1 in sudoku:
         for square1 in Row1:
@@ -69,6 +85,8 @@ def filling_in_els_only_met_once_squares():
                                 break
                         if Holder:
                             break
+
+
 def limiting_possibilities_for_nums_in_squares():
     for Row1 in sudoku:
         for square1 in Row1:
@@ -98,6 +116,8 @@ def limiting_possibilities_for_nums_in_squares():
                             Holder = len(current_numbers) < 9
                         elif not row1[i]:
                             raise ValueError
+
+
 def limiting_possibilities_for_nums_in_lines():
     rows = []
     for Row1 in sudoku:
@@ -123,6 +143,8 @@ def limiting_possibilities_for_nums_in_lines():
                             Holder = len(so_far) < 9
                         elif not row1[i]:
                             raise ValueError
+
+
 def filling_in_els_only_met_once_lines():
     for Row1 in sudoku:
         for row1 in range(3):
@@ -158,6 +180,8 @@ def filling_in_els_only_met_once_lines():
                                 break
                         if breaker:
                             break
+
+
 def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
     again = False
     for Row1 in range(3):
@@ -204,6 +228,8 @@ def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
                                                 raise ValueError
     if again:
         cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
+
+
 def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares():
     for Row1 in range(3):
         lines = []
@@ -243,7 +269,9 @@ def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in
                                     else:
                                         rows_of_nums2[num] = {row2}
                     if num in rows_of_nums1.keys() and num in rows_of_nums2.keys():
-                        if rows_of_nums1[num] != rows_of_nums2[num] and not (rows_of_nums1[num].issubset(rows_of_nums2[num]) or rows_of_nums2[num].issubset(rows_of_nums1[num])):
+                        if rows_of_nums1[num] != rows_of_nums2[num] and not (
+                                rows_of_nums1[num].issubset(rows_of_nums2[num]) or rows_of_nums2[num].issubset(
+                                rows_of_nums1[num])):
                             helpful = False
                     if helpful and num in rows_of_nums1.keys() and num in rows_of_nums2.keys():
                         helpful_rows_of_nums[num] = rows_of_nums1[num]
@@ -257,6 +285,8 @@ def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in
                                 if isinstance(El, list):
                                     if num in El:
                                         El.remove(num)
+
+
 def set_of_nums_met_within_the_same_places_at_most_squares():
     for Row1 in sudoku:
         for square1 in Row1:
@@ -294,6 +324,8 @@ def set_of_nums_met_within_the_same_places_at_most_squares():
                             for each in square1[positions[pair][0]][positions[pair][1]]:
                                 if each not in so_far:
                                     square1[positions[pair][0]][positions[pair][1]].remove(each)
+
+
 def set_of_nums_met_within_the_same_places_at_most_lines():
     lines = []
     for Row1 in sudoku:
@@ -329,9 +361,14 @@ def set_of_nums_met_within_the_same_places_at_most_lines():
                         for each in line[position]:
                             if each not in so_far:
                                 line[position].remove(each)
+
+
 def solve():
     holder = True
-    last_sudoku = [[[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]], [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]], [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]]]
+    last_sudoku = [
+        [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]],
+        [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]],
+        [[[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]]]
     while holder:
         holder = False
         make_equal(sudoku, last_sudoku)
@@ -390,7 +427,15 @@ def solve():
                         for col1 in range(3):
                             if isinstance(sudoku[Row1][square1][row1][col1], list):
                                 possible = [i for i in sudoku[Row1][square1][row1][col1]]
-                                last_attempt = [[[[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]]], [[[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]]], [[[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]], [[[], [], []], [[], [], []], [[], [], []]]]]
+                                last_attempt = [[[[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]]],
+                                                [[[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]]],
+                                                [[[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]],
+                                                 [[[], [], []], [[], [], []], [[], [], []]]]]
                                 make_equal(sudoku, last_attempt)
                                 for el in possible:
                                     sudoku[Row1][square1][row1][col1] = el
@@ -399,9 +444,12 @@ def solve():
                                         if solved():
                                             return
                                     except ValueError:
-                                        last_attempt[Row1][square1][row1][col1].remove(el), make_equal(last_attempt, sudoku)
+                                        last_attempt[Row1][square1][row1][col1].remove(el), make_equal(last_attempt,
+                                                                                                       sudoku)
                                 if not solved():
                                     raise ValueError
+
+
 for Row in range(3):
     row, current = 0, None
     while row < 3:
