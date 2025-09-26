@@ -15,7 +15,7 @@ def print_sudoku():
         for j in range(3):
             print(" │ ".join(["  ".join(str(c) for c in square1[j]) for square1 in sudoku[i]]))
 
-        print("────────│─────────│────────\n" if i < 2 else "", end="")
+        print("────────│─────────│────────" * (i < 2))
 
 
 def error_in_lines():
@@ -26,7 +26,7 @@ def error_in_lines():
             lines.append(row_3_9[0][r] + row_3_9[1][r] + row_3_9[2][r])
 
     for line in lines:
-        so_far = sorted(i for i in line if isinstance(i, int))
+        so_far = [i for i in line if isinstance(i, int)]
 
         if len(set(so_far)) < len(so_far):
             raise ValueError
@@ -61,17 +61,12 @@ def limiting_possibilities_in_squares():
 
     for i in range(3):
         for ii in range(3):
-            present_numbers = set()
+            present_numbers = [x for x in sum(sudoku[i][ii], []) if isinstance(x, int) and x]
 
-            for row in sudoku[i][ii]:
-                for c in row:
-                    if c and isinstance(c, int):
-                        if c in present_numbers:
-                            raise ValueError
+            if len(set(present_numbers)) < len(present_numbers):
+                raise ValueError
 
-                        present_numbers.add(c)
-
-            holder = True
+            holder, present_numbers = True, set(present_numbers)
 
             while holder:
                 holder = False
@@ -80,13 +75,15 @@ def limiting_possibilities_in_squares():
                     for jj in range(3):
                         if not (curr := sudoku[i][ii][j][jj]):
                             sudoku[i][ii][j][jj] = set(range(1, 10)) - present_numbers
+
                         elif isinstance(curr, set):
                             sudoku[i][ii][j][jj] -= present_numbers
+
                         else:
                             continue
 
                         if len(curr := sudoku[i][ii][j][jj]) == 1:
-                            sudoku[i][ii][j][jj] = curr.copy().pop()
+                            sudoku[i][ii][j][jj] = next(iter(curr))
                             present_numbers.add(sudoku[i][ii][j][jj])
                             holder = len(present_numbers) < 9
 
@@ -107,22 +104,23 @@ def limiting_possibilities_in_lines():
 
     for i in range(3):
         for l in range(3 * i, 3 * (i + 1)):
-            present_numbers, holder = {x for x in lines[l] if isinstance(x, int)}, True
+            present_numbers, holder = [x for x in lines[l] if isinstance(x, int)], True
+
+            if len(set(present_numbers)) < len(present_numbers):
+                raise ValueError
+
+            present_numbers = set(present_numbers)
 
             while holder:
                 holder, line = False, sudoku[i][0][l % 3] + sudoku[i][1][l % 3] + sudoku[i][2][l % 3]
 
                 for j in range(9):
                     if isinstance(curr := line[j], set):
-                        line[j] -= present_numbers
+                        sudoku[i][j // 3][l % 3][j % 3] -= present_numbers
 
-                        if len(curr) == 1:
-                            line[j] = curr.copy().pop()
-
-                            for ii in range(3):
-                                sudoku[i][ii][l % 3] = line[3 * ii: 3 * (ii + 1)]
-
-                            present_numbers.add(line[j])
+                        if len(sudoku[i][j // 3][l % 3][j % 3]) == 1:
+                            sudoku[i][j // 3][l % 3][j % 3] = next(iter(curr))
+                            present_numbers.add(sudoku[i][j // 3][l % 3][j % 3])
                             holder = len(present_numbers) < 9
 
                         elif not curr:
@@ -204,47 +202,33 @@ def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
                 lines.append(sudoku[row_3_9][0][r] + sudoku[row_3_9][1][r] + sudoku[row_3_9][2][r])
 
             for square in range(3):
-                rows_of_nums, helpful_rows_of_nums = {}, {}
+                helpful_rows_of_nums = defaultdict(list)
 
                 for n in range(1, 10):
-                    helpful = True
-
                     for r in range(3):
                         for c in sudoku[row_3_9][square][r]:
-                            if isinstance(c, set) and helpful:
-                                if n in c.intersection(rows_of_nums):
-                                    if rows_of_nums[n] != r:
-                                        helpful = False
+                            if isinstance(c, set) and n in c:
+                                helpful_rows_of_nums[n].append(r)
 
-                                        break
+                all_helpful_rows_of_nums.append({k: v[0] for k, v in helpful_rows_of_nums.items() if len(v) == 1})
 
-                                    rows_of_nums[n] = r
-
-                    if helpful and n in rows_of_nums:
-                        helpful_rows_of_nums[n] = rows_of_nums[n]
-
-                all_helpful_rows_of_nums.append(helpful_rows_of_nums)
-
-            for i in range(3):
-                for c in range(9):
-                    if isinstance(lines[i][c], set):
-                        for possible in lines[i][c].copy():
+            for i, l in enumerate(lines):
+                for cell in l:
+                    if isinstance(cell, set):
+                        for n in cell.copy():
                             for r, helpful_rows in enumerate(all_helpful_rows_of_nums):
-                                if possible in helpful_rows:
-                                    if helpful_rows[possible] == i:
-                                        for el in list(range(3 * r)) + list(range(3 * (r + 1), 9)):
-                                            if isinstance(lines[i][el], set):
-                                                if possible in lines[i][el]:
-                                                    (curr := sudoku[row_3_9][el // 3][i][el % 3].copy()).remove(
-                                                        possible)
+                                if helpful_rows.get(n) == i:
+                                    for c in list(range(3 * r)) + list(range(3 * (r + 1), 9)):
+                                        if isinstance(l[c], set) and n in l[c]:
+                                            sudoku[row_3_9][c // 3][i][c % 3].remove(n)
 
-                                                    if len(curr) == 1:
-                                                        sudoku[row_3_9][el // 3][i][el % 3] = curr.pop()
+                                            if len(curr := sudoku[row_3_9][c // 3][i][c % 3].copy()) == 1:
+                                                sudoku[row_3_9][c // 3][i][c % 3] = curr.pop()
 
-                                                    holder = True
+                                            holder = True
 
-                                            elif lines[i][el] == possible:
-                                                raise ValueError
+                                        elif l[c] == n:
+                                            raise ValueError
 
 
 def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares():
@@ -258,112 +242,106 @@ def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in
         for r in range(3):
             lines.append(sudoku[row_3_9][0][r] + sudoku[row_3_9][1][r] + sudoku[row_3_9][2][r])
 
-        for square0 in range(3):
-            for square1 in range(square0 + 1, 3):
-                rows_of_nums0, rows_of_nums1, helpful_rows_of_nums = {}, {}, {}
+        for missing_square in range(3):
+            indexes = {0, 1, 2} - {missing_square}
+            square0, square1 = sudoku[row_3_9][indexes.pop()], sudoku[row_3_9][indexes.pop()]
+            rows_of_nums0, rows_of_nums1, helpful_rows_of_nums = defaultdict(set), defaultdict(set), {}
 
-                for n in range(1, 10):
-                    helpful = True
-
-                    for r in range(3):
-                        for c in sudoku[row_3_9][square0][r]:
-                            if isinstance(c, set) and helpful:
-                                if n in c:
-                                    if n in rows_of_nums0:
-                                        rows_of_nums0[n].add(r)
-
-                                        if len(rows_of_nums0[n]) == 3:
-                                            helpful = False
-
-                                            break
-
-                                    else:
-                                        rows_of_nums0[n] = {r}
-
-                    for r in range(3):
-                        for c in sudoku[row_3_9][square1][r]:
-                            if isinstance(c, set) and helpful:
-                                if n in c:
-                                    if n in rows_of_nums1:
-                                        rows_of_nums1[n].add(r)
-
-                                        if len(rows_of_nums1[n]) == 3:
-                                            helpful = False
-
-                                            break
-
-                                    else:
-                                        rows_of_nums1[n] = {r}
-
-                    if n in set(rows_of_nums0).intersection(rows_of_nums1):
-                        if rows_of_nums0[n] != rows_of_nums1[n] and not (
-                                rows_of_nums0[n] <= rows_of_nums1[n] or rows_of_nums1[n] <= rows_of_nums0[n]):
-                            helpful = False
-
-                    if helpful and n in set(rows_of_nums0).intersection(rows_of_nums1):
-                        helpful_rows_of_nums[n] = rows_of_nums0[n]
-
-                all_helpful_rows_of_nums.append(helpful_rows_of_nums)
-
-        for square in range(3):
             for n in range(1, 10):
-                if n in all_helpful_rows_of_nums[2 - square]:
-                    for r in range(3):
-                        if r in all_helpful_rows_of_nums[2 - square][n]:
-                            for c in sudoku[row_3_9][square][r]:
-                                if isinstance(c, set):
-                                    c.discard(n)
+                helpful = True
+
+                for r in range(3):
+                    for c in square0[r]:
+                        if isinstance(c, set) and n in c:
+                            rows_of_nums0[n].add(r)
+
+                            if len(rows_of_nums0[n]) == 3:
+                                helpful = False
+
+                                break
+
+                    if not helpful:
+                        break
+
+                if not helpful:
+                    continue
+
+                for r in range(3):
+                    for c in square1[r]:
+                        if isinstance(c, set) and n in c:
+                            rows_of_nums1[n].add(r)
+
+                            if len(rows_of_nums1[n]) == 3:
+                                helpful = False
+
+                                break
+
+                    if not helpful:
+                        break
+
+                if not helpful:
+                    continue
+
+                if n in set(rows_of_nums0).intersection(rows_of_nums1):
+                    if rows_of_nums0[n] != rows_of_nums1[n] and not (
+                            rows_of_nums0[n] <= rows_of_nums1[n] or rows_of_nums1[n] <= rows_of_nums0[n]):
+                        helpful = False
+
+                if helpful and n in set(rows_of_nums0).intersection(rows_of_nums1):
+                    helpful_rows_of_nums[n] = rows_of_nums0[n]
+
+            all_helpful_rows_of_nums.append(helpful_rows_of_nums)
+
+        for square, nums_rows in zip(sudoku[row_3_9], all_helpful_rows_of_nums):
+            for n in range(1, 10):
+                if n in nums_rows:
+                    for r in nums_rows[n]:
+                        for c in square[r]:
+                            if isinstance(c, set):
+                                c.discard(n)
 
 
-def set_of_nums_met_within_the_same_places_at_most_squares():
+def set_of_nums_met_within_the_same_cells_squares():
     """
     If, in a given 3x3 square, there's a set of numbers, the total set of possible positions of which is as big as the set of numbers, then no other numbers are options for either of these positions. If the set of positions has fewer elements than the set of numbers, the sudoku is wrong
     """
 
     for row_3_9 in sudoku:
         for square in row_3_9:
-            not_found_yet = {i for i in range(1, 10)}
+            nums_positions = defaultdict(set)
 
-            for r in square:
-                for c in r:
-                    if isinstance(c, int):
-                        not_found_yet.remove(c)
-
-            nums_positions = {}
-
-            for n in not_found_yet:
-                nums_positions[n] = set()
-                for r in range(3):
-                    for c in range(3):
-                        if isinstance(square[r][c], set) and n in square[r][c]:
+            for n in set(range(1, 10)) - {i for i in sum(square, []) if isinstance(i, int)}:
+                for r, row in enumerate(square):
+                    for c, cell in enumerate(row):
+                        if isinstance(cell, set) and n in cell:
                             nums_positions[n].add((r, c))
 
             nums_positions = {k: v for k, v in sorted(nums_positions.items(), key=lambda x: len(x[1]))}
 
             for n, positions in nums_positions.items():
-                if list(nums_positions).index(n) + 1 >= len(nums_positions[n]):
+                if list(nums_positions).index(n) + 1 >= len(positions):
                     full, so_far, checked = False, {n}, {n}
 
                     for pair in positions:
-                        for possible in square[pair[0]][pair[1]]:
-                            if possible not in checked:
-                                if nums_positions[possible] <= nums_positions[n]:
+                        for m in square[pair[0]][pair[1]]:
+                            if m not in checked:
+                                if nums_positions[m] <= positions:
                                     if full:
                                         raise ValueError
 
-                                    so_far.add(possible)
+                                    so_far.add(m)
 
-                                    if so_far == nums_positions[n]:
+                                    if so_far == positions:
                                         full = True
 
-                                checked.add(possible)
+                                checked.add(m)
 
                     if full:
-                        for pair in positions:
-                            square[pair[0]][pair[1]].intersection_update(so_far)
+                        for r, c in positions:
+                            square[r][c].intersection_update(so_far)
 
 
-def set_of_nums_met_within_the_same_places_at_most_lines():
+def set_of_nums_met_within_the_same_cells_lines():
     """
     If, in a given line, there's a set of numbers, the total set of possible positions of which is as big as the set of numbers, then no other numbers are options for either of these positions. If the set of positions has fewer elements than the set of numbers, the sudoku is wrong
     """
@@ -375,12 +353,9 @@ def set_of_nums_met_within_the_same_places_at_most_lines():
             lines.append(row_3_9[0][r] + row_3_9[1][r] + row_3_9[2][r])
 
     for l, line in enumerate(lines):
-        not_found_yet = {i for i in range(1, 10) if i not in line}
-        nums_positions = {}
+        nums_positions = defaultdict(set)
 
-        for n in not_found_yet:
-            nums_positions[n] = set()
-
+        for n in {i for i in range(1, 10) if i not in line}:
             for c in range(9):
                 if isinstance(line[c], set) and n in line[c]:
                     nums_positions[n].add(c)
@@ -388,19 +363,19 @@ def set_of_nums_met_within_the_same_places_at_most_lines():
         nums_positions = {k: v for k, v in sorted(nums_positions.items(), key=lambda T: len(T[1]))}
 
         for n, positions in nums_positions.items():
-            if list(nums_positions).index(n) + 1 >= len(nums_positions[n]):
+            if list(nums_positions).index(n) + 1 >= len(positions):
                 full, so_far, checked = False, {n}, {n}
 
                 for el in positions:
                     for each in line[el]:
                         if each not in checked:
-                            if nums_positions[each] <= nums_positions[n]:
+                            if nums_positions[each] <= positions:
                                 if full:
                                     raise ValueError
 
                                 so_far.add(each)
 
-                                if so_far == nums_positions[n]:
+                                if so_far == positions:
                                     full = True
 
                             checked.add(each)
@@ -430,7 +405,7 @@ def solve():
         limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
         filling_in_els_met_only_once_squares()
         limiting_possibilities_in_lines()
-        set_of_nums_met_within_the_same_places_at_most_lines()
+        set_of_nums_met_within_the_same_cells_lines()
         filling_in_els_met_only_once_lines()
         transpose_sudoku()
         limiting_possibilities_in_lines()
@@ -443,11 +418,11 @@ def solve():
         limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
         filling_in_els_met_only_once_squares()
         limiting_possibilities_in_lines()
-        set_of_nums_met_within_the_same_places_at_most_lines()
+        set_of_nums_met_within_the_same_cells_lines()
         filling_in_els_met_only_once_lines()
         error_in_lines(), transpose_sudoku()
         limiting_possibilities_in_squares()
-        set_of_nums_met_within_the_same_places_at_most_squares()
+        set_of_nums_met_within_the_same_cells_squares()
         filling_in_els_met_only_once_squares()
         error_in_lines()
 
