@@ -10,10 +10,10 @@ sudoku = [[[[8, 0, 0], [0, 0, 3], [0, 7, 0]], [[0, 0, 0], [6, 0, 0], [0, 9, 0]],
           [[[0, 0, 1], [0, 0, 8], [0, 9, 0]], [[0, 0, 0], [5, 0, 0], [0, 0, 0]], [[0, 6, 8], [0, 1, 0], [4, 0, 0]]]]
 
 
-def print_sudoku():
+def print_sudoku(s):
     for i in range(3):
         for j in range(3):
-            print(" │ ".join(["  ".join(str(c) for c in square1[j]) for square1 in sudoku[i]]))
+            print(" │ ".join(["  ".join(str(c) for c in square1[j]) for square1 in s[i]]))
 
         print("────────│─────────│────────" * (i < 2))
 
@@ -32,8 +32,8 @@ def error_in_lines():
             raise ValueError
 
 
-def solved():
-    for row_3_9 in sudoku:
+def solved(s):
+    for row_3_9 in s:
         for square in row_3_9:
             for r in square:
                 for c in r:
@@ -134,25 +134,41 @@ def filling_in_els_met_only_once_squares():
 
     for i in range(3):
         for ii in range(3):
-            holder = True
+            num_coordinates, present_nums = defaultdict(set), set()
 
-            while holder:
-                holder, possibilities_coordinates, total = False, {}, set()
+            for r in range(3):
+                for c in range(3):
+                    if isinstance(cell := sudoku[i][ii][r][c], set):
+                        for n in cell:
+                            num_coordinates[n].add((r, c))
 
-                for r in range(3):
-                    for c in range(3):
-                        if isinstance(cell := sudoku[i][ii][r][c], set):
-                            for n in cell:
-                                if n in total:
-                                    if n in possibilities_coordinates:
-                                        possibilities_coordinates.pop(n)
-                                else:
-                                    possibilities_coordinates[n] = (r, c)
-                                    total.add(n)
+                    else:
+                        present_nums.add(cell)
 
-                for k, (r, c) in possibilities_coordinates.items():
-                    holder |= len(sudoku[i][ii][r][c]) > 1
-                    sudoku[i][ii][r][c] = k
+            if not present_nums.isdisjoint(num_coordinates) or present_nums.union(num_coordinates) != set(range(1, 10)):
+                raise ValueError
+
+            num_coordinates = dict(num_coordinates)
+
+            if not num_coordinates:
+                continue
+
+            while num_coordinates:
+                n, s = min(num_coordinates.items(), key=lambda p: len(p[1]))
+                num_coordinates.pop(n)
+
+                if not s:
+                    raise ValueError
+
+                if len(s) > 1:
+                    break
+
+                r, c = s.pop()
+
+                for m in sudoku[i][ii][r][c].intersection(num_coordinates):
+                    num_coordinates[m].discard((r, c))
+
+                sudoku[i][ii][r][c] = n
 
 
 def filling_in_els_met_only_once_lines():
@@ -167,24 +183,40 @@ def filling_in_els_met_only_once_lines():
             for ii in range(3):
                 line += sudoku[i][ii][j]
 
-            holder, possibilities_indexes, total = True, {}, set()
+            num_coordinates, present_nums = defaultdict(set), set()
 
-            while holder:
-                holder = False
+            for c, cell in enumerate(line):
+                if isinstance(cell, set):
+                    for n in cell:
+                        num_coordinates[n].add(c)
 
-                for c, cell in enumerate(line):
-                    if isinstance(cell, set):
-                        for n in cell:
-                            if n in total:
-                                if n in possibilities_indexes:
-                                    possibilities_indexes.pop(n)
-                            else:
-                                possibilities_indexes[n] = c
-                                total.add(n)
+                else:
+                    present_nums.add(cell)
 
-                for k, v in possibilities_indexes.items():
-                    holder |= len(line[v]) > 1
-                    sudoku[i][v // 3][j][v % 3] = k
+            if not present_nums.isdisjoint(num_coordinates) or present_nums.union(num_coordinates) != set(range(1, 10)):
+                raise ValueError
+
+            num_coordinates = dict(num_coordinates)
+
+            if not num_coordinates:
+                continue
+
+            while num_coordinates:
+                n, s = min(num_coordinates.items(), key=lambda p: len(p[1]))
+                num_coordinates.pop(n)
+
+                if not s:
+                    raise ValueError
+
+                if len(s) > 1:
+                    break
+
+                c = s.pop()
+
+                for m in sudoku[i][c // 3][j][c % 3].intersection(num_coordinates):
+                    num_coordinates[m].discard(c)
+
+                sudoku[i][c // 3][j][c % 3] = n
 
 
 def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
@@ -386,54 +418,58 @@ def set_of_nums_met_within_the_same_cells_lines():
 
 
 def solve():
-    global sudoku
+    def generator():
+        global sudoku
 
-    holder = True
+        holder = True
 
-    while holder:
-        holder = False
-        last_sudoku = deepcopy(sudoku)
-        limiting_possibilities_in_squares()
-        filling_in_els_met_only_once_squares()
-        limiting_possibilities_in_lines()
-        filling_in_els_met_only_once_lines()
-        limiting_possibilities_in_squares()
-        filling_in_els_met_only_once_squares()
-        cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
-        filling_in_els_met_only_once_squares()
-        limiting_possibilities_in_squares()
-        limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
-        filling_in_els_met_only_once_squares()
-        limiting_possibilities_in_lines()
-        set_of_nums_met_within_the_same_cells_lines()
-        filling_in_els_met_only_once_lines()
-        transpose_sudoku()
-        limiting_possibilities_in_lines()
-        filling_in_els_met_only_once_lines()
-        limiting_possibilities_in_squares()
-        filling_in_els_met_only_once_squares()
-        cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
-        filling_in_els_met_only_once_squares()
-        limiting_possibilities_in_squares()
-        limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
-        filling_in_els_met_only_once_squares()
-        limiting_possibilities_in_lines()
-        set_of_nums_met_within_the_same_cells_lines()
-        filling_in_els_met_only_once_lines()
-        error_in_lines(), transpose_sudoku()
-        limiting_possibilities_in_squares()
-        set_of_nums_met_within_the_same_cells_squares()
-        filling_in_els_met_only_once_squares()
-        error_in_lines()
+        while holder:
+            holder = False
+            last_sudoku = deepcopy(sudoku)
+            limiting_possibilities_in_squares()
+            filling_in_els_met_only_once_squares()
+            limiting_possibilities_in_lines()
+            filling_in_els_met_only_once_lines()
+            limiting_possibilities_in_squares()
+            filling_in_els_met_only_once_squares()
+            cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
+            filling_in_els_met_only_once_squares()
+            limiting_possibilities_in_squares()
+            limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
+            filling_in_els_met_only_once_squares()
+            limiting_possibilities_in_lines()
+            set_of_nums_met_within_the_same_cells_lines()
+            filling_in_els_met_only_once_lines()
+            transpose_sudoku()
+            limiting_possibilities_in_lines()
+            filling_in_els_met_only_once_lines()
+            limiting_possibilities_in_squares()
+            filling_in_els_met_only_once_squares()
+            cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
+            filling_in_els_met_only_once_squares()
+            limiting_possibilities_in_squares()
+            limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
+            filling_in_els_met_only_once_squares()
+            limiting_possibilities_in_lines()
+            set_of_nums_met_within_the_same_cells_lines()
+            filling_in_els_met_only_once_lines()
+            error_in_lines(), transpose_sudoku()
+            limiting_possibilities_in_squares()
+            set_of_nums_met_within_the_same_cells_squares()
+            filling_in_els_met_only_once_squares()
+            error_in_lines()
 
-        for i in sudoku:
-            for ii in i:
-                for j in ii:
-                    for el in j:
-                        if isinstance(el, set):
-                            holder = True
+            for i in sudoku:
+                for ii in i:
+                    for j in ii:
+                        for el in j:
+                            if isinstance(el, set):
+                                holder = True
 
-                            break
+                                break
+
+                            if holder:
+                                break
 
                         if holder:
                             break
@@ -444,41 +480,37 @@ def solve():
                 if holder:
                     break
 
-            if holder:
-                break
+            if holder and sudoku == last_sudoku:
+                for i in range(3):
+                    for ii in range(3):
+                        for j in range(3):
+                            for jj in range(3):
+                                if isinstance(cell := sudoku[i][ii][j][jj], set):
+                                    last_attempt = deepcopy(sudoku)
 
-        if holder and sudoku == last_sudoku:
-            for i in range(3):
-                for ii in range(3):
-                    for j in range(3):
-                        for jj in range(3):
-                            if isinstance(cell := sudoku[i][ii][j][jj], set):
-                                last_attempt = deepcopy(sudoku)
+                                    for el in cell.copy():
+                                        sudoku[i][ii][j][jj] = el
 
-                                for el in cell.copy():
-                                    sudoku[i][ii][j][jj] = el
+                                        try:
+                                            for s in generator():
+                                                yield deepcopy(s)
 
-                                    try:
-                                        solve()
+                                        except ValueError:
+                                            ...
 
-                                        if solved():
-                                            return
-
-                                    except ValueError:
                                         last_attempt[i][ii][j][jj].remove(el)
                                         sudoku = deepcopy(last_attempt)
 
-                                if not solved():
-                                    raise ValueError
+                                    return
+
+        yield deepcopy(sudoku)
+
+    for s in generator():
+        print_sudoku(s)
+        print("Milliseconds:", time() * 1000 - t)
 
 
-if __name__ == '__main__':
-
-    t1 = time() * 1000
+if __name__ == "__main__":
+    t = time() * 1000
     solve()
-    t2 = time() * 1000
-
-    if not solved():
-        raise ValueError('This sudoku is incorrect!')
-
-    print_sudoku(), print('Milliseconds:', t2 - t1)
+    print("All solutions found!")
