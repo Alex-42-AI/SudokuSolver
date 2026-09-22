@@ -4,13 +4,13 @@ from time import time
 
 from copy import deepcopy
 
+sudoku: list[list[list[list[int | set[int]]]]] = [
+    [[[8, 0, 0], [0, 0, 3], [0, 7, 0]], [[0, 0, 0], [6, 0, 0], [0, 9, 0]], [[0, 0, 0], [0, 0, 0], [2, 0, 0]]],
+    [[[0, 5, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 7], [0, 4, 5], [1, 0, 0]], [[0, 0, 0], [7, 0, 0], [0, 3, 0]]],
+    [[[0, 0, 1], [0, 0, 8], [0, 9, 0]], [[0, 0, 0], [5, 0, 0], [0, 0, 0]], [[0, 6, 8], [0, 1, 0], [4, 0, 0]]]]
 
-sudoku = [[[[8, 0, 0], [0, 0, 3], [0, 7, 0]], [[0, 0, 0], [6, 0, 0], [0, 9, 0]], [[0, 0, 0], [0, 0, 0], [2, 0, 0]]],
-          [[[0, 5, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 7], [0, 4, 5], [1, 0, 0]], [[0, 0, 0], [7, 0, 0], [0, 3, 0]]],
-          [[[0, 0, 1], [0, 0, 8], [0, 9, 0]], [[0, 0, 0], [5, 0, 0], [0, 0, 0]], [[0, 6, 8], [0, 1, 0], [4, 0, 0]]]]
 
-
-def print_sudoku(s):
+def print_sudoku(s: list[list[list[list[int | set[int]]]]]):
     for i in range(3):
         for j in range(3):
             print(" │ ".join(["  ".join(str(c) for c in square1[j]) for square1 in s[i]]))
@@ -18,7 +18,11 @@ def print_sudoku(s):
         print("────────│─────────│────────" * (i < 2))
 
 
-def error_in_lines():
+def validate_lines():
+    """
+    Makes sure lines don't repeat numbers.
+    """
+
     lines = []
 
     for row_3_9 in sudoku:
@@ -32,7 +36,11 @@ def error_in_lines():
             raise ValueError
 
 
-def solved(s):
+def solved(s: list[list[list[list[int | set[int]]]]]):
+    """
+    :param s: Current sudoku puzzle
+    :return: Whether the puzzle is solved
+    """
     for row_3_9 in s:
         for square in row_3_9:
             for r in square:
@@ -44,6 +52,10 @@ def solved(s):
 
 
 def transpose_sudoku():
+    """
+    Transposes the sudoku fully like a matrix.
+    """
+
     for i in range(3):
         for ii in range(3):
             if ii > i:
@@ -54,9 +66,10 @@ def transpose_sudoku():
                     sudoku[i][ii][j][jj], sudoku[i][ii][jj][j] = sudoku[i][ii][jj][j], sudoku[i][ii][j][jj]
 
 
-def limiting_possibilities_in_squares():
+def propagate_box_constraints():
     """
-    In a middle 3x3 square, in positions where the value is an iterable of possibilities, these possibilities get limited based on already present numbers in the square
+    In a box, in positions where the value is a set of possibilities, these
+    possibilities get limited based on already present numbers in the square.
     """
 
     for i in range(3):
@@ -82,18 +95,21 @@ def limiting_possibilities_in_squares():
                         else:
                             continue
 
-                        if len(curr := sudoku[i][ii][j][jj]) == 1:
+                        curr: set[int] = sudoku[i][ii][j][jj]
+
+                        if len(curr) == 1:
                             sudoku[i][ii][j][jj] = next(iter(curr))
-                            present_numbers.add(sudoku[i][ii][j][jj])
-                            holder = len(present_numbers) < 9
+                            present_numbers.add(curr.pop())
+                            holder |= len(present_numbers) < 9
 
                         elif not curr:
                             raise ValueError
 
 
-def limiting_possibilities_in_lines():
+def propagate_line_constraints():
     """
-    In a given line, in positions where the value is an iterable of possibilities, these possibilities get limited based on already present numbers in a given line
+    In a given line, in positions where the value is a set of possibilities,
+    these possibilities get limited based on already present numbers in the line.
     """
 
     lines = []
@@ -121,20 +137,20 @@ def limiting_possibilities_in_lines():
                         if len(sudoku[i][j // 3][l % 3][j % 3]) == 1:
                             sudoku[i][j // 3][l % 3][j % 3] = next(iter(curr))
                             present_numbers.add(sudoku[i][j // 3][l % 3][j % 3])
-                            holder = len(present_numbers) < 9
+                            holder |= len(present_numbers) < 9
 
                         elif not curr:
                             raise ValueError
 
 
-def filling_in_els_met_only_once_squares():
+def apply_box_hidden_singles():
     """
-    If a given number has only 1 possible position in a 3x3 square, it's placed there as the value in the given square. Since this removes other possibilities from there, this process is repeated for all numbers that might remain possible in only 1 position
+    If a given number has only 1 possible position in a box, it's placed there as the value in the given square.
     """
 
     for i in range(3):
         for ii in range(3):
-            num_coordinates, present_nums = defaultdict(set), set()
+            num_coordinates, curr_nums = defaultdict(set), set()
 
             for r in range(3):
                 for c in range(3):
@@ -143,9 +159,9 @@ def filling_in_els_met_only_once_squares():
                             num_coordinates[n].add((r, c))
 
                     else:
-                        present_nums.add(cell)
+                        curr_nums.add(cell)
 
-            if not present_nums.isdisjoint(num_coordinates) or present_nums.union(num_coordinates) != set(range(1, 10)):
+            if not curr_nums.isdisjoint(num_coordinates) or curr_nums.union(num_coordinates) != set(range(1, 10)):
                 raise ValueError
 
             num_coordinates = dict(num_coordinates)
@@ -171,9 +187,9 @@ def filling_in_els_met_only_once_squares():
                 sudoku[i][ii][r][c] = n
 
 
-def filling_in_els_met_only_once_lines():
+def apply_line_hidden_singles():
     """
-    If a given number has only 1 possible position in a line, it's placed there as the value in the given square. Since this removes other possibilities from there, this process is repeated for all numbers that might remain possible in only 1 position
+    If a given number has only 1 possible position in a line, it's placed there as the value in the given square.
     """
 
     for i in range(3):
@@ -183,7 +199,7 @@ def filling_in_els_met_only_once_lines():
             for ii in range(3):
                 line += sudoku[i][ii][j]
 
-            num_coordinates, present_nums = defaultdict(set), set()
+            num_coordinates, curr_nums = defaultdict(set), set()
 
             for c, cell in enumerate(line):
                 if isinstance(cell, set):
@@ -191,9 +207,9 @@ def filling_in_els_met_only_once_lines():
                         num_coordinates[n].add(c)
 
                 else:
-                    present_nums.add(cell)
+                    curr_nums.add(cell)
 
-            if not present_nums.isdisjoint(num_coordinates) or present_nums.union(num_coordinates) != set(range(1, 10)):
+            if not curr_nums.isdisjoint(num_coordinates) or curr_nums.union(num_coordinates) != set(range(1, 10)):
                 raise ValueError
 
             num_coordinates = dict(num_coordinates)
@@ -219,9 +235,10 @@ def filling_in_els_met_only_once_lines():
                 sudoku[i][c // 3][j][c % 3] = n
 
 
-def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
+def apply_pointing_pairs():
     """
-    In a given 3x3 square, it's possible a number only appears within the same 1x3 row. In that case, all other instances of it on the same line in the other 2 3x3 squares are cleared out
+    In a given box, it's possible a number only appears within the same 1x3 row. In that
+    case, all other instances of it on the same line in the other 2 boxes are cleared out.
     """
 
     for row_3_9 in range(3):
@@ -263,9 +280,10 @@ def cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line():
                                             raise ValueError
 
 
-def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares():
+def apply_claiming_pairs():
     """
-    On a given 3x9 row in the sudoku, it's possible there're 2 3x3 squares such that for a given number's possible positions, in both middle squares, the positions are within the same 2 1x3 rows. In that case, wherever the number is in goth 3x3 squares, in the third one, it can't appear in either of these 2 1x3 rows
+    In a given row of boxes, if the possible positions of a number in two boxes are confined
+    to the same two rows, that number can be eliminated from those rows in the remaining box.
     """
 
     for row_3_9 in range(3):
@@ -333,9 +351,11 @@ def limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in
                                 c.discard(n)
 
 
-def set_of_nums_met_within_the_same_cells_squares():
+def pigeonhole_principle_squares():
     """
-    If, in a given 3x3 square, there's a set of numbers, the total set of possible positions of which is as big as the set of numbers, then no other numbers are options for either of these positions. If the set of positions has fewer elements than the set of numbers, the sudoku is wrong
+    If, in a given 3x3 square, there's a set of numbers, the total set of possible positions of which is as big as the
+    set of numbers, then no other numbers are options for either of these positions. If the set of positions has fewer
+    elements than the set of numbers, the sudoku is wrong.
     """
 
     for row_3_9 in sudoku:
@@ -373,9 +393,11 @@ def set_of_nums_met_within_the_same_cells_squares():
                             square[r][c].intersection_update(so_far)
 
 
-def set_of_nums_met_within_the_same_cells_lines():
+def pigeonhole_principle_lines():
     """
-    If, in a given line, there's a set of numbers, the total set of possible positions of which is as big as the set of numbers, then no other numbers are options for either of these positions. If the set of positions has fewer elements than the set of numbers, the sudoku is wrong
+    If, in a given line, there's a set of numbers, the total set of possible positions of which is
+    as big as the set of numbers, then no other numbers are options for either of these positions.
+    If the set of positions has fewer elements than the set of numbers, the sudoku is wrong.
     """
 
     lines = []
@@ -418,6 +440,8 @@ def set_of_nums_met_within_the_same_cells_lines():
 
 
 def solve():
+    global solutions
+
     def generator():
         global sudoku
 
@@ -425,39 +449,27 @@ def solve():
 
         while holder:
             holder = False
+
             last_sudoku = deepcopy(sudoku)
-            limiting_possibilities_in_squares()
-            filling_in_els_met_only_once_squares()
-            limiting_possibilities_in_lines()
-            filling_in_els_met_only_once_lines()
-            limiting_possibilities_in_squares()
-            filling_in_els_met_only_once_squares()
-            cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
-            filling_in_els_met_only_once_squares()
-            limiting_possibilities_in_squares()
-            limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
-            filling_in_els_met_only_once_squares()
-            limiting_possibilities_in_lines()
-            set_of_nums_met_within_the_same_cells_lines()
-            filling_in_els_met_only_once_lines()
+
+            propagate_box_constraints(), apply_box_hidden_singles(), propagate_line_constraints()
+            apply_line_hidden_singles(), propagate_box_constraints(), apply_box_hidden_singles()
+            apply_pointing_pairs(), apply_box_hidden_singles(), propagate_box_constraints()
+            apply_claiming_pairs(), apply_box_hidden_singles(), propagate_line_constraints()
+            pigeonhole_principle_lines(), apply_line_hidden_singles()
+
             transpose_sudoku()
-            limiting_possibilities_in_lines()
-            filling_in_els_met_only_once_lines()
-            limiting_possibilities_in_squares()
-            filling_in_els_met_only_once_squares()
-            cleaning_els_met_on_the_same_row_in_a_square_from_the_rest_of_the_line()
-            filling_in_els_met_only_once_squares()
-            limiting_possibilities_in_squares()
-            limiting_els_in_third_square_if_number_is_met_only_within_the_same_2_rows_in_the_first_2_squares()
-            filling_in_els_met_only_once_squares()
-            limiting_possibilities_in_lines()
-            set_of_nums_met_within_the_same_cells_lines()
-            filling_in_els_met_only_once_lines()
-            error_in_lines(), transpose_sudoku()
-            limiting_possibilities_in_squares()
-            set_of_nums_met_within_the_same_cells_squares()
-            filling_in_els_met_only_once_squares()
-            error_in_lines()
+
+            propagate_line_constraints(), apply_line_hidden_singles(), propagate_box_constraints()
+            apply_box_hidden_singles(), apply_pointing_pairs(), apply_box_hidden_singles()
+            propagate_box_constraints(), apply_claiming_pairs(), apply_box_hidden_singles()
+            propagate_line_constraints(), pigeonhole_principle_lines(), apply_line_hidden_singles()
+
+            validate_lines(), transpose_sudoku()
+
+            propagate_box_constraints(), pigeonhole_principle_squares(), apply_box_hidden_singles()
+
+            validate_lines()
 
             for i in sudoku:
                 for ii in i:
@@ -506,11 +518,18 @@ def solve():
         yield deepcopy(sudoku)
 
     for s in generator():
+        solutions += 1
         print_sudoku(s)
         print("Milliseconds:", time() * 1000 - t)
 
 
 if __name__ == "__main__":
+    solutions = 0
     t = time() * 1000
     solve()
-    print("All solutions found!")
+
+    if solutions:
+        print(f"All  solutions found - a total of {solutions}!")
+
+    else:
+        print("No solutions found!")
