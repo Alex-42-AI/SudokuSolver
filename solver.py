@@ -264,7 +264,7 @@ def apply_pointing_pairs():
             for i, l in enumerate(lines):
                 for cell in l:
                     if isinstance(cell, set):
-                        for n in cell.copy():
+                        for n in cell:
                             for r, helpful_rows in enumerate(all_helpful_rows_of_nums):
                                 if helpful_rows.get(n) == i:
                                     for c in list(range(3 * r)) + list(range(3 * (r + 1), 9)):
@@ -500,7 +500,7 @@ def solve():
                                 if isinstance(cell := sudoku[i][ii][j][jj], set):
                                     last_attempt = deepcopy(sudoku)
 
-                                    for el in cell.copy():
+                                    for el in cell:
                                         sudoku[i][ii][j][jj] = el
 
                                         try:
@@ -529,7 +529,7 @@ if __name__ == "__main__":
 
     try:
         solve()
-        print(f"All  solutions found - a total of {solutions}!")
+        print(f"All  solutions found - a total of {solutions}!\nMilliseconds: {time() * 1000 - t}")
 
     except ValueError:
         print("No solutions found!")
