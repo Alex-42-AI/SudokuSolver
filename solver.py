@@ -526,10 +526,10 @@ def solve():
 if __name__ == "__main__":
     solutions = 0
     t = time() * 1000
-    solve()
 
-    if solutions:
+    try:
+        solve()
         print(f"All  solutions found - a total of {solutions}!")
 
-    else:
+    except ValueError:
         print("No solutions found!")
