@@ -4,13 +4,19 @@ from time import time
 
 from copy import deepcopy
 
-sudoku: list[list[list[list[int | set[int]]]]] = [
+Cell = int | set[int]
+Row = list[Cell]
+Box = list[Row]
+Band = list[Box]
+Grid = list[Band]
+
+sudoku: Grid = [
     [[[8, 0, 0], [0, 0, 3], [0, 7, 0]], [[0, 0, 0], [6, 0, 0], [0, 9, 0]], [[0, 0, 0], [0, 0, 0], [2, 0, 0]]],
     [[[0, 5, 0], [0, 0, 0], [0, 0, 0]], [[0, 0, 7], [0, 4, 5], [1, 0, 0]], [[0, 0, 0], [7, 0, 0], [0, 3, 0]]],
     [[[0, 0, 1], [0, 0, 8], [0, 9, 0]], [[0, 0, 0], [5, 0, 0], [0, 0, 0]], [[0, 6, 8], [0, 1, 0], [4, 0, 0]]]]
 
 
-def print_sudoku(s: list[list[list[list[int | set[int]]]]]):
+def print_sudoku(s: Grid):
     for i in range(3):
         for j in range(3):
             print(" │ ".join(["  ".join(str(c) for c in square1[j]) for square1 in s[i]]))
@@ -36,7 +42,7 @@ def validate_lines():
             raise ValueError
 
 
-def solved(s: list[list[list[list[int | set[int]]]]]):
+def solved(s: Grid):
     """
     :param s: Current sudoku puzzle
     :return: Whether the puzzle is solved
@@ -529,7 +535,9 @@ if __name__ == "__main__":
 
     try:
         solve()
-        print(f"All  solutions found - a total of {solutions}!\nMilliseconds: {time() * 1000 - t}")
+        print(f"All  solutions found - a total of {solutions}!")
 
     except ValueError:
         print("No solutions found!")
+
+    print(f"Milliseconds: {time() * 1000 - t}")
