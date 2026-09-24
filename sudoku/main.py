@@ -36,11 +36,12 @@ class SudokuApp:
 
         solutions_frame = ttk.Frame(main)
         solutions_frame.grid(row=0, column=1, sticky="nsew")
+        solutions_frame.columnconfigure(0, weight=1)
+        solutions_frame.rowconfigure(1, weight=1)
 
-        main.columnconfigure(1, weight=1)
+        main.columnconfigure(1, weight=1, minsize=400)
         main.rowconfigure(0, weight=1)
 
-        # Sudoku grid
         for box_row in range(3):
             for box_col in range(3):
                 box_frame = ttk.Frame(
@@ -73,8 +74,6 @@ class SudokuApp:
                             padx=1,
                             pady=1
                         )
-
-                        entry.insert(0, "0")
 
                         entry.bind(
                             "<KeyRelease>",
@@ -119,7 +118,6 @@ class SudokuApp:
         buttons_frame.columnconfigure(0, weight=1)
         buttons_frame.columnconfigure(1, weight=1)
 
-        # Solutions
         ttk.Label(
             solutions_frame,
             text="Solutions"
@@ -145,9 +143,13 @@ class SudokuApp:
             yscrollcommand=scrollbar.set
         )
 
-    def normalize_entry(self, entry):
+    @staticmethod
+    def normalize_entry(entry):
+        if not entry.get():
+            return
+
         try:
-            value = int(entry.get() or 0)
+            value = int(entry.get())
         except ValueError:
             value = 0
 
@@ -161,8 +163,7 @@ class SudokuApp:
             [
                 [
                     [
-                        int(self.entries[3 * band + row][3 * box + col].get())
-                        for col in range(3)
+                        int(self.entries[3 * band + row][3 * box + col].get() or 0) for col in range(3)
                     ]
                     for row in range(3)
                 ]
@@ -195,12 +196,12 @@ class SudokuApp:
         try:
             t = time()
             solve(sudoku,
-                on_solution=lambda solution:
-                    self.solution_queue.put(
-                        ("solution", solution)
-                    ),
-                stop_event=self.stop_event
-            )
+                  on_solution=lambda solution:
+                  self.solution_queue.put(
+                      ("solution", solution, 1000 * (time() - t))
+                  ),
+                  stop_event=self.stop_event
+                  )
             t = time() - t
 
             self.solution_queue.put(
@@ -220,27 +221,28 @@ class SudokuApp:
     def process_solution_queue(self):
         try:
             while True:
-                message_type, value = self.solution_queue.get_nowait()
+                message = self.solution_queue.get_nowait()
 
-                if message_type == "solution":
+                if message[0] == "solution":
+                    solution, t = message[1:]
                     self.solution_count += 1
 
                     self.append_solution(
                         self.solution_count,
-                        value
+                        solution, t
                     )
 
-                elif message_type == "time":
+                elif message[0] == "time":
                     self.append_text(
-                        f"Time: {value:.6f} seconds\n"
+                        f"Finished in {message[1]:.3f} seconds.\n"
                     )
 
-                elif message_type == "error":
+                elif message[0] == "error":
                     self.append_text(
-                        f"Error: {value}\n"
+                        f"Error: {message[1]}\n"
                     )
 
-                elif message_type == "finished":
+                elif message[0] == "finished":
                     self.worker = None
 
         except Empty:
@@ -249,10 +251,11 @@ class SudokuApp:
         if self.worker is not None:
             self.root.after(50, self.process_solution_queue)
 
-    def append_solution(self, number, solution):
+    def append_solution(self, number, solution, t):
         text = (
             f"Solution {number}\n"
-            f"{format_sudoku(solution)}\n\n"
+            f"{format_sudoku(solution)}\n"
+            f"Time: {t:.3f} miliseconds\n\n"
         )
 
         self.append_text(text)
@@ -276,7 +279,6 @@ class SudokuApp:
         for row in self.entries:
             for entry in row:
                 entry.delete(0, tk.END)
-                entry.insert(0, "0")
 
         while True:
             try:
