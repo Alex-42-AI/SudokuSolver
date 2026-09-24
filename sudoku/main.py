@@ -220,35 +220,35 @@ class SudokuApp:
 
     def process_solution_queue(self):
         try:
-            while True:
-                message = self.solution_queue.get_nowait()
+            message = self.solution_queue.get_nowait()
 
-                if message[0] == "solution":
-                    solution, t = message[1:]
-                    self.solution_count += 1
+            if message[0] == "solution":
+                solution, t = message[1:]
+                self.solution_count += 1
 
-                    self.append_solution(
-                        self.solution_count,
-                        solution, t
-                    )
+                self.append_solution(
+                    self.solution_count,
+                    solution,
+                    t
+                )
 
-                elif message[0] == "time":
-                    self.append_text(
-                        f"Finished in {message[1]:.3f} seconds.\n"
-                    )
+            elif message[0] == "time":
+                self.append_text(
+                    f"Finished in {message[1]:.3f} seconds.\n"
+                )
 
-                elif message[0] == "error":
-                    self.append_text(
-                        f"Error: {message[1]}\n"
-                    )
+            elif message[0] == "error":
+                self.append_text(
+                    f"Error: {message[1]}\n"
+                )
 
-                elif message[0] == "finished":
-                    self.worker = None
+            elif message[0] == "finished":
+                self.worker = None
 
         except Empty:
             ...
 
-        if self.worker is not None:
+        if self.worker is not None or not self.solution_queue.empty():
             self.root.after(50, self.process_solution_queue)
 
     def append_solution(self, number, solution, t):
