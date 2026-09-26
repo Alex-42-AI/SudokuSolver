@@ -29,4 +29,4 @@ The solver does not assume that a valid Sudoku has exactly one solution. If the 
 Run the GUI:
 
 ```bash
-python main.py
+python3 main.py
