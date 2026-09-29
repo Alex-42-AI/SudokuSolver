@@ -10,18 +10,6 @@ Grid = list[Band]
 
 NUMS = set(range(1, 10))
 
-# World's hardest sudoku:
-# sudoku: Grid = [
-#     [[[8, 0, 0], [0, 0, 3], [0, 7, 0]],
-#     [[0, 0, 0], [6, 0, 0], [0, 9, 0]],
-#     [[0, 0, 0], [0, 0, 0], [2, 0, 0]]],
-#     [[[0, 5, 0], [0, 0, 0], [0, 0, 0]],
-#     [[0, 0, 7], [0, 4, 5], [1, 0, 0]],
-#     [[0, 0, 0], [7, 0, 0], [0, 3, 0]]],
-#     [[[0, 0, 1], [0, 0, 8], [0, 9, 0]],
-#     [[0, 0, 0], [5, 0, 0], [0, 0, 0]],
-#     [[0, 6, 8], [0, 1, 0], [4, 0, 0]]]]
-
 
 def format_sudoku(s: Grid):
     lines = []
@@ -280,7 +268,7 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
             for ii in range(3):
                 for jj in range(3):
                     if not sudoku[i][j][ii][jj]:
-                        sudoku[i][j][ii][jj] = set(NUMS)
+                        sudoku[i][j][ii][jj] = NUMS.copy()
 
     stack = []
 
