@@ -16,7 +16,7 @@ class SudokuApp:
         self.root = root
         self.root.title("Sudoku Solver")
 
-        self.entries = [[None] * 9 for _ in range(9)]
+        self.entries = [[0] * 9 for _ in range(9)]
         self.solution_queue = Queue()
         self.stop_event = Event()
         self.worker = None
@@ -210,7 +210,7 @@ class SudokuApp:
 
         except Exception as e:
             self.solution_queue.put(
-                ("error", e)
+                ("error", e.args[0])
             )
 
         finally:
