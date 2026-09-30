@@ -30,9 +30,9 @@ def print_sudoku(s: Grid):
 
 def solve(sudoku: Grid, on_solution=None, stop_event=None):
     def validate_lines():
-        for band in sudoku:
+        for bd in sudoku:
             for r in range(3):
-                line = band[0][r] + band[1][r] + band[2][r]
+                line = bd[0][r] + bd[1][r] + bd[2][r]
                 so_far = [i for i in line if isinstance(i, int)]
 
                 if len(set(so_far)) < len(so_far):
@@ -101,16 +101,16 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                     continue
 
                 while num_coordinates:
-                    n, s = min(num_coordinates.items(), key=lambda p: len(p[1]))
+                    n, coordinates = min(num_coordinates.items(), key=lambda p: len(p[1]))
                     num_coordinates.pop(n)
 
-                    if not s:
+                    if not coordinates:
                         raise ValueError("Nowhere left to place a candidate number in a box")
 
-                    if len(s) > 1:
+                    if len(coordinates) > 1:
                         break
 
-                    r, c = s.pop()
+                    r, c = coordinates.pop()
 
                     for m in sudoku[i][ii][r][c].intersection(num_coordinates):
                         num_coordinates[m].discard((r, c))
@@ -179,16 +179,16 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                     continue
 
                 while num_coordinates:
-                    n, s = min(num_coordinates.items(), key=lambda p: len(p[1]))
+                    n, coordinates = min(num_coordinates.items(), key=lambda p: len(p[1]))
                     num_coordinates.pop(n)
 
-                    if not s:
+                    if not coordinates:
                         raise ValueError("Nowhere left to place a candidate number in a line")
 
-                    if len(s) > 1:
+                    if len(coordinates) > 1:
                         break
 
-                    c = s.pop()
+                    c = coordinates.pop()
 
                     for m in sudoku[i][c // 3][j][c % 3].intersection(num_coordinates):
                         num_coordinates[m].discard(c)
@@ -239,7 +239,7 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                                 if stop_event is not None and stop_event.is_set():
                                     return
 
-                                n = len(stack)
+                                stack_length = len(stack)
                                 stack.append(((i, ii, j, jj), cell.copy()))
                                 sudoku[i][ii][j][jj] = el
 
@@ -249,7 +249,7 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                                 except ValueError:
                                     ...
 
-                                for _ in range(len(stack) - n):
+                                for _ in range(len(stack) - stack_length):
                                     value = stack.pop()
 
                                     if value == -1:
@@ -263,12 +263,12 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
 
         yield deepcopy(sudoku)
 
-    for i in range(3):
-        for j in range(3):
-            for ii in range(3):
-                for jj in range(3):
-                    if not sudoku[i][j][ii][jj]:
-                        sudoku[i][j][ii][jj] = NUMS.copy()
+    for band in range(3):
+        for box in range(3):
+            for box_row in range(3):
+                for row_col in range(3):
+                    if not sudoku[band][box][box_row][row_col]:
+                        sudoku[band][box][box_row][row_col] = NUMS.copy()
 
     stack = []
 
