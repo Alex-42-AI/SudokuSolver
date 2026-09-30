@@ -255,7 +255,7 @@ class SudokuApp:
         text = (
             f"Solution {number}\n"
             f"{format_sudoku(solution)}\n"
-            f"Time: {t:.3f} miliseconds\n\n"
+            f"Time: {t:.3f} milliseconds\n\n"
         )
 
         self.append_text(text)
