@@ -8,8 +8,6 @@ Box = list[Row]
 Band = list[Box]
 Grid = list[Band]
 
-NUMS = set(range(1, 10))
-
 
 def format_sudoku(s: Grid):
     lines = []
@@ -50,54 +48,20 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
         cell = sudoku[i][ii][j][jj]
 
         if isinstance(cell, int):
-            square = sudoku[i][ii]
+            for conf in conflicts[coord]:
+                b, s, r, c = conf
 
-            for r in range(3):
-                for c in range(3):
-                    if isinstance(curr_cell := square[r][c], set):
-                        if cell in curr_cell:
-                            coords = (i, ii, r, c)
-                            stack.append((coords, curr_cell.copy()))
+                if isinstance(curr_cell := sudoku[b][s][r][c], set):
+                    if cell in curr_cell:
+                        stack.append((conf, curr_cell.copy()))
 
-                            if coords not in queue:
-                                queue.append(coords)
+                        if conf not in queue:
+                            queue.append(conf)
 
-                        sudoku[i][ii][r][c].discard(cell)
+                        sudoku[b][s][r][c].discard(cell)
 
-                        if not sudoku[i][ii][r][c]:
+                        if not sudoku[b][s][r][c]:
                             raise ValueError("No options left for a cell")
-
-            row = sudoku[i][0][j] + sudoku[i][1][j] + sudoku[i][2][j]
-
-            for c in [*range(3 * ii), *range(3 * (ii + 1), 9)]:
-                if isinstance(curr_cell := row[c], set):
-                    if cell in curr_cell:
-                        coords = (i, c // 3, j, c % 3)
-                        stack.append((coords, curr_cell.copy()))
-
-                        if coords not in queue:
-                            queue.append(coords)
-
-                    sudoku[i][c // 3][j][c % 3].discard(cell)
-
-                    if not sudoku[i][c // 3][j][c % 3]:
-                        raise ValueError("No options left for a cell")
-
-            col = [sudoku[b][ii][r][jj] for b in range(3) for r in range(3)]
-
-            for r in [*range(3 * i), *range(3 * (i + 1), 9)]:
-                if isinstance(curr_cell := col[r], set):
-                    if cell in curr_cell:
-                        coords = (r // 3, ii, r % 3, jj)
-                        stack.append((coords, curr_cell.copy()))
-
-                        if coords not in queue:
-                            queue.append(coords)
-
-                    sudoku[r // 3][ii][r % 3][jj].discard(cell)
-
-                    if not sudoku[r // 3][ii][r % 3][jj]:
-                        raise ValueError("No options left for a cell")
 
     def generator():
         nonlocal sudoku
@@ -151,7 +115,7 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
             for box_row in range(3):
                 for row_col in range(3):
                     if not sudoku[band][box][box_row][row_col]:
-                        sudoku[band][box][box_row][row_col] = NUMS.copy()
+                        sudoku[band][box][box_row][row_col] = {1, 2, 3, 4, 5, 6, 7, 8, 9}
 
     stack, queue = [], deque([])
 
@@ -168,3 +132,16 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
 
         if on_solution is not None:
             on_solution(s)
+
+
+conflicts = {}
+
+for g_i in range(3):
+    for g_ii in range(3):
+        square = {(g_i, g_ii, r, c) for r in range(3) for c in range(3)}
+
+        for g_j in range(3):
+            for g_jj in range(3):
+                coords = (g_i, g_ii, g_j, g_jj)
+                conflicts[coords] = square.union({(g_i, c // 3, g_j, c % 3) for c in range(9)}).union(
+                    {(r // 3, g_ii, r % 3, g_jj) for r in range(9)}) - {coords}
