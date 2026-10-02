@@ -14,7 +14,7 @@ from time import time
 class SudokuApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Sudoku Solver")
+        self.root.title("sudoku Solver")
 
         self.entries = [[0] * 9 for _ in range(9)]
         self.solution_queue = Queue()
@@ -205,7 +205,7 @@ class SudokuApp:
             t = time() - t
 
             self.solution_queue.put(
-                ("time", t)
+                ("time", 1000 * t)
             )
 
         except Exception as e:
@@ -234,7 +234,7 @@ class SudokuApp:
 
             elif message[0] == "time":
                 self.append_text(
-                    f"Finished in {message[1]:.3f} seconds.\n"
+                    f"Finished in {message[1]:.3f} milliseconds.\n"
                 )
 
             elif message[0] == "error":
