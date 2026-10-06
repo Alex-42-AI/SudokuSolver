@@ -14,7 +14,7 @@ from time import time
 class SudokuApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("sudoku Solver")
+        self.root.title("Sudoku Solver")
 
         self.entries = [[0] * 9 for _ in range(9)]
         self.solution_queue = Queue()
