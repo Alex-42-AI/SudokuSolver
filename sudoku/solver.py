@@ -27,17 +27,6 @@ def print_sudoku(s: Grid):
 
 
 def solve(sudoku: Grid, on_solution=None, stop_event=None):
-    def transpose_sudoku():
-        for i in range(3):
-            for ii in range(3):
-                for j in range(2):
-                    for jj in range(j + 1, 3):
-                        sudoku[i][ii][j][jj], sudoku[i][ii][jj][j] = sudoku[i][ii][jj][j], sudoku[i][ii][j][jj]
-
-        for i in range(3):
-            for j in range(i + 1, 3):
-                sudoku[i][j], sudoku[j][i] = sudoku[j][i], sudoku[i][j]
-
     def apply_cell_constraints(coord: tuple[int, int, int, int]):
         i, ii, j, jj = coord
         cell = sudoku[i][ii][j][jj]
@@ -97,14 +86,8 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                                     queue.pop()
 
                                 for _ in range(len(stack) - stack_length):
-                                    value = stack.pop()
-
-                                    if value == -1:
-                                        transpose_sudoku()
-
-                                    else:
-                                        (b, bx, r, c), old = value
-                                        sudoku[b][bx][r][c] = old
+                                    (b, bx, r, c), old = stack.pop()
+                                    sudoku[b][bx][r][c] = old
 
                             return
 
