@@ -14,7 +14,7 @@ def format_sudoku(s: Grid):
 
     for i in range(3):
         for j in range(3):
-            lines.append(" │ ".join(["  ".join(str(c) for c in square[j]) for square in s[i]]))
+            lines.append(" │ ".join(["  ".join(str(c) for c in sq[j]) for sq in s[i]]))
 
         if i < 2:
             lines.append("────────│─────────│────────")
@@ -109,12 +109,12 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
                     if isinstance(sudoku[band][box][box_row][row_col], int):
                         apply_cell_constraints((band, box, box_row, row_col))
 
-    for s in generator():
+    for sol in generator():
         if stop_event is not None and stop_event.is_set():
             return
 
         if on_solution is not None:
-            on_solution(s)
+            on_solution(sol)
 
 
 conflicts = {}
