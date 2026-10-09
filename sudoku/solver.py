@@ -14,7 +14,7 @@ def format_sudoku(s: Grid):
 
     for i in range(3):
         for j in range(3):
-            lines.append(" │ ".join(["  ".join(str(c) for c in sq[j]) for sq in s[i]]))
+            lines.append(" │ ".join(["  ".join(str(c) for c in box[j]) for box in s[i]]))
 
         if i < 2:
             lines.append("────────│─────────│────────")
