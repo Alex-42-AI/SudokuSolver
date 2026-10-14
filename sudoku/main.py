@@ -159,18 +159,7 @@ class SudokuApp:
         entry.insert(0, str(value))
 
     def get_sudoku(self):
-        return [
-            [
-                [
-                    [
-                        int(self.entries[3 * band + row][3 * box + col].get() or 0) for col in range(3)
-                    ]
-                    for row in range(3)
-                ]
-                for box in range(3)
-            ]
-            for band in range(3)
-        ]
+        return [[int(self.entries[r][c].get() or 0) for c in range(9)] for r in range(9)]
 
     def toggle_solving(self):
         if self.worker is not None:
@@ -184,6 +173,7 @@ class SudokuApp:
 
         self.solution_count = 0
         self.stop_event.clear()
+        self.discard_output = False
 
         self.clear_solution_text()
 
