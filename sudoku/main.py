@@ -8,8 +8,6 @@ from queue import Queue, Empty
 
 from solver import solve, format_sudoku
 
-from time import time
-
 
 class SudokuApp:
     def __init__(self, root):
@@ -17,8 +15,8 @@ class SudokuApp:
         self.root.title("Sudoku Solver")
         self.entries = [[0] * 9 for _ in range(9)]
         self.solution_queue = Queue()
-        self.stop_event = Event()
         self.discard_output = False
+        self.stop_event = Event()
         self.worker = None
         self.solution_count = 0
 
@@ -90,7 +88,6 @@ class SudokuApp:
             pady=(12, 0),
             sticky="ew"
         )
-
         self.solve_button = ttk.Button(
             buttons_frame,
             text="Solve",
@@ -102,7 +99,6 @@ class SudokuApp:
             padx=(0, 5),
             sticky="ew"
         )
-
         self.clear_button = ttk.Button(
             buttons_frame,
             text="Clear",
@@ -162,13 +158,16 @@ class SudokuApp:
         return [[int(self.entries[r][c].get() or 0) for c in range(9)] for r in range(9)]
 
     def toggle_solving(self):
-        if self.worker is not None:
-            self.stop_solving()
-        else:
+        if self.worker is None:
             self.start_solving()
 
+        else:
+            self.stop_solving()
+
     def start_solving(self):
-        if self.worker is not None and self.worker.is_alive():
+        self.clear_solution_text()
+
+        if self.worker is not None:
             return
 
         self.solution_count = 0
@@ -192,22 +191,23 @@ class SudokuApp:
 
     def stop_solving(self):
         self.stop_event.set()
+        self.discard_output = True
+        self.worker = None
+        self.solution_count = 0
+        self.solve_button.configure(text="Solve")
+
+        while not self.solution_queue.empty():
+            self.solution_queue.get_nowait()
 
     def solve_worker(self, sudoku):
         try:
-            t = time()
             solve(sudoku,
-                  on_solution=lambda solution:
+                  lambda solution:
                   self.solution_queue.put(
-                      ("solution", solution, 1000 * (time() - t))
+                      ("solution", solution)
                   ),
-                  stop_event=self.stop_event
+                  self.stop_event
                   )
-            t = time() - t
-
-            self.solution_queue.put(
-                ("time", 1000 * t)
-            )
 
         except Exception as e:
             self.solution_queue.put(
@@ -216,37 +216,35 @@ class SudokuApp:
 
         finally:
             self.solution_queue.put(
-                ("finished", None)
+                ("finished",)
             )
 
     def process_solution_queue(self):
         try:
-            if not self.solution_queue.empty():
-                message = self.solution_queue.get_nowait()
+            message = self.solution_queue.get_nowait()
 
-                if message[0] == "solution":
-                    solution, t = message[1:]
+            if message[0] == "solution":
+                if not self.discard_output:
+                    solution = message[1]
                     self.solution_count += 1
 
                     self.append_solution(
                         self.solution_count,
-                        solution,
-                        t
+                        solution
                     )
 
-                elif message[0] == "time":
-                    self.append_text(
-                        f"Finished in {message[1]:.3f} milliseconds.\n"
-                    )
-
-                elif message[0] == "error":
+            elif message[0] == "error":
+                if not self.discard_output:
                     self.append_text(
                         f"Error: {message[1]}\n"
                     )
 
-                elif message[0] == "finished":
-                    self.worker = None
-                    self.solve_button.configure(text="Solve")
+            elif message[0] == "finished":
+                if not self.discard_output:
+                    self.append_text("Finished.")
+
+                self.worker = None
+                self.solve_button.configure(text="Solve")
 
         except Empty:
             ...
@@ -254,11 +252,10 @@ class SudokuApp:
         if self.worker is not None or not self.solution_queue.empty():
             self.root.after(50, self.process_solution_queue)
 
-    def append_solution(self, number, solution, t):
+    def append_solution(self, number, solution):
         text = (
             f"Solution {number}\n"
-            f"{format_sudoku(solution)}\n"
-            f"Time: {t:.3f} milliseconds\n\n"
+            f"{format_sudoku(solution)}\n\n"
         )
 
         self.append_text(text)
@@ -275,20 +272,12 @@ class SudokuApp:
         self.solution_text.configure(state="disabled")
 
     def clear(self):
-        self.stop_event.set()
-        self.discard_output = True
+        self.stop_solving()
         self.clear_solution_text()
 
         for row in self.entries:
             for entry in row:
                 entry.delete(0, tk.END)
-
-        while True:
-            try:
-                self.solution_queue.get_nowait()
-
-            except Empty:
-                break
 
 
 if __name__ == "__main__":
