@@ -114,4 +114,4 @@ for g_i in range(9):
     for g_j in range(9):
         sq_r, sq_c = 3 * (g_i // 3), 3 * (g_j // 3)
         square = {(r, c) for r in range(sq_r, sq_r + 3) for c in range(sq_c, sq_c + 3)}
-        conflicts[(g_i, g_j)] = square.union(zip(9 * [g_i], range(9))).union(zip(range(9), 9 * [g_j])) - {(g_i, g_j)}
+        conflicts[(g_i, g_j)] = square | set(zip(9 * [g_i], range(9))) | set(zip(range(9), 9 * [g_j])) - {(g_i, g_j)}
