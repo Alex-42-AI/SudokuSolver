@@ -20,7 +20,7 @@ puzzle = [[8, 0, 0, 0, 0, 0, 0, 0, 0],
           [0, 9, 0, 0, 0, 0, 0, 0, 0]]
 
 with open(case_dir / "puzzle.txt", "w", encoding="utf-8") as f:
-    f.write(f"Puzzle:\n{format_sudoku(puzzle)}\n")
+    f.write(f"{format_sudoku(puzzle)}\n")
 
 with open(case_dir / "solutions.txt", "w", encoding="utf-8") as f:
     def on_solution(sol):
