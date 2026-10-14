@@ -3,21 +3,18 @@ from collections import deque
 from copy import deepcopy
 
 Cell = int | set[int]
-Row = list[Cell]
-Box = list[Row]
-Band = list[Box]
-Grid = list[Band]
+Line = list[Cell]
+Grid = list[Line]
 
 
 def format_sudoku(s: Grid):
     lines = []
 
-    for i in range(3):
-        for j in range(3):
-            lines.append(" │ ".join(["  ".join(str(c) for c in box[j]) for box in s[i]]))
+    for l in range(9):
+        lines.append(" | ".join(["  ".join(map(str, s[l][3 * c:3 * c + 3])) for c in range(3)]))
 
-        if i < 2:
-            lines.append("────────│─────────│────────")
+    lines.insert(6, "────────│─────────│────────")
+    lines.insert(3, "────────│─────────│────────")
 
     return "\n".join(lines)
 
@@ -27,29 +24,29 @@ def print_sudoku(s: Grid):
 
 
 def solve(sudoku: Grid, on_solution=None, stop_event=None):
-    def apply_cell_constraints(coord: tuple[int, int, int, int]):
-        i, ii, j, jj = coord
-        cell = sudoku[i][ii][j][jj]
+    def apply_cell_constraints(coord: tuple[int, int]):
+        i, j = coord
+        cell = sudoku[i][j]
 
         if isinstance(cell, set) and len(cell) == 1:
-            sudoku[i][ii][j][jj] = next(iter(cell))
+            sudoku[i][j] = next(iter(cell))
 
-        cell = sudoku[i][ii][j][jj]
+        cell = sudoku[i][j]
 
         if isinstance(cell, int):
             for conf in conflicts[coord]:
-                b, s, r, c = conf
+                r, c = conf
 
-                if isinstance(curr_cell := sudoku[b][s][r][c], set):
+                if isinstance(curr_cell := sudoku[r][c], set):
                     if cell in curr_cell:
                         stack.append((conf, curr_cell.copy()))
 
                         if conf not in queue:
                             queue.append(conf)
 
-                        sudoku[b][s][r][c].discard(cell)
+                        sudoku[r][c].discard(cell)
 
-                        if not sudoku[b][s][r][c]:
+                        if not sudoku[r][c]:
                             raise ValueError("No options left for a cell")
 
     def generator():
@@ -61,70 +58,60 @@ def solve(sudoku: Grid, on_solution=None, stop_event=None):
             if stop_event is not None and stop_event.is_set():
                 return
 
-        for i in range(3):
-            for ii in range(3):
-                for j in range(3):
-                    for jj in range(3):
-                        if isinstance(cell := sudoku[i][ii][j][jj], set):
-                            for el in cell:
-                                if stop_event is not None and stop_event.is_set():
-                                    return
-
-                                stack_length = len(stack)
-                                stack.append(((i, ii, j, jj), cell.copy()))
-                                queue_length = len(queue)
-                                queue.append((i, ii, j, jj))
-                                sudoku[i][ii][j][jj] = el
-
-                                try:
-                                    yield from generator()
-
-                                except ValueError:
-                                    ...
-
-                                for _ in range(len(queue) - queue_length):
-                                    queue.pop()
-
-                                for _ in range(len(stack) - stack_length):
-                                    (b, bx, r, c), old = stack.pop()
-                                    sudoku[b][bx][r][c] = old
-
+        for i in range(9):
+            for j in range(9):
+                if isinstance(cell := sudoku[i][j], set):
+                    for el in cell:
+                        if stop_event is not None and stop_event.is_set():
                             return
+
+                        stack_length = len(stack)
+                        stack.append(((i, j), cell.copy()))
+                        queue_length = len(queue)
+                        queue.append((i, j))
+                        sudoku[i][j] = el
+
+                        try:
+                            yield from generator()
+
+                        except ValueError:
+                            ...
+
+                        for _ in range(len(queue) - queue_length):
+                            queue.pop()
+
+                        for _ in range(len(stack) - stack_length):
+                            (r, c), old = stack.pop()
+                            sudoku[r][c] = old
+
+                    return
 
         yield deepcopy(sudoku)
 
-    for band in range(3):
-        for box in range(3):
-            for box_row in range(3):
-                for row_col in range(3):
-                    if not sudoku[band][box][box_row][row_col]:
-                        sudoku[band][box][box_row][row_col] = {1, 2, 3, 4, 5, 6, 7, 8, 9}
+    for row in range(9):
+        for col in range(9):
+            if not sudoku[row][col]:
+                sudoku[row][col] = {1, 2, 3, 4, 5, 6, 7, 8, 9}
 
     stack, queue = [], deque([])
 
-    for band in range(3):
-        for box in range(3):
-            for box_row in range(3):
-                for row_col in range(3):
-                    if isinstance(sudoku[band][box][box_row][row_col], int):
-                        apply_cell_constraints((band, box, box_row, row_col))
+    for row in range(9):
+        for col in range(9):
+            if isinstance(sudoku[row][col], int):
+                apply_cell_constraints((row, col))
 
-    for sol in generator():
+    for s in generator():
         if stop_event is not None and stop_event.is_set():
             return
 
         if on_solution is not None:
-            on_solution(sol)
+            on_solution(s)
 
 
 conflicts = {}
 
-for g_i in range(3):
-    for g_ii in range(3):
-        square = {(g_i, g_ii, r, c) for r in range(3) for c in range(3)}
-
-        for g_j in range(3):
-            for g_jj in range(3):
-                coords = (g_i, g_ii, g_j, g_jj)
-                conflicts[coords] = square.union({(g_i, c // 3, g_j, c % 3) for c in range(9)}).union(
-                    {(r // 3, g_ii, r % 3, g_jj) for r in range(9)}) - {coords}
+for g_i in range(9):
+    for g_j in range(9):
+        sq_r, sq_c = 3 * (g_i // 3), 3 * (g_j // 3)
+        square = {(r, c) for r in range(sq_r, sq_r + 3) for c in range(sq_c, sq_c + 3)}
+        conflicts[(g_i, g_j)] = square.union(zip(9 * [g_i], range(9))).union(zip(range(9), 9 * [g_j])) - {(g_i, g_j)}
