@@ -88,7 +88,7 @@ def solve(sudoku: list[int], on_solution=None, stop_event=None):
             sudoku[i] = 1 << (d - 1)
 
         else:
-            sudoku[i] = (1 << 9) - 1
+            sudoku[i] = 511
 
     stack, queue = [], deque([])
 
