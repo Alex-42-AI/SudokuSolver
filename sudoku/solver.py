@@ -9,7 +9,7 @@ def format_sudoku(s: list[int]):
     lines = []
 
     for l in range(9):
-        lines.append(" | ".join(["  ".join(map(lambda b: str(b.bit_length()), s[9 * l: 9 * (l + 1)][3 * c:3 * c + 3])) for c in range(3)]))
+        lines.append(" │ ".join(["  ".join(map(lambda b: str(b.bit_length()), s[9 * l: 9 * (l + 1)][3 * c:3 * c + 3])) for c in range(3)]))
 
     lines.insert(6, "────────│─────────│────────")
     lines.insert(3, "────────│─────────│────────")
