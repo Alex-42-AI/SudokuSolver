@@ -241,7 +241,7 @@ class SudokuApp:
 
             elif message[0] == "finished":
                 if not self.discard_output:
-                    self.append_text("Finished.")
+                    self.append_text("Finished exhaustive search.")
 
                 self.worker = None
                 self.solve_button.configure(text="Solve")
